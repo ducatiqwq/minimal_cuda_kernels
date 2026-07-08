@@ -1,0 +1,32 @@
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# CUDA/C++ build artifacts
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.log
+
+# Kernel project build outputs
+**/build/
+**/ncu_report
+**/ncu*
+
+# Exclude other works
+/fwht/
