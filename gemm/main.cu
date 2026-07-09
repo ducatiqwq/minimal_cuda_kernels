@@ -5,12 +5,14 @@
 #include <random>
 #include <chrono>
 #include <string>
+#include <cstdlib>
 #include <cuda_runtime.h>
 #include <cuda_bf16.h>
 
 using bf16 = __nv_bfloat16;
 
 extern void launch_gemm(const bf16* d_A, const bf16* d_B, bf16* d_C, int M, int N, int K);
+extern void launch_gemm_cublas(const bf16* d_A, const bf16* d_B, bf16* d_C, int M, int N, int K);
 
 void print_device_metadata() {
     int nDevices;
@@ -58,13 +60,29 @@ void cpu_gemm_naive(
 int main(int argc, char** argv) {
     print_device_metadata();
 
-    const bool debug = (argc > 1 && std::string(argv[1]) == "--debug");
+    bool debug = false;
+    bool use_cublas = false;
+    for (int i = 1; i < argc; ++i) {
+        const std::string arg = argv[i];
+        if (arg == "--debug") {
+            debug = true;
+        } else if (arg == "--cublas") {
+            use_cublas = true;
+        } else {
+            std::cerr << "Unknown argument: " << arg << std::endl;
+            return EXIT_FAILURE;
+        }
+    }
+
+    auto launch = use_cublas ? launch_gemm_cublas : launch_gemm;
+    const char* implementation = use_cublas ? "cuBLAS" : "custom CUTLASS";
 
     int M = debug ? 128 : 8192;
     int N = debug ? 512 : 8192;
     int K = debug ? 64 : 8192;
 
-    std::cout << "Configuration: GEMM (" << M << ", " << N << ", " << K << "), dtype=bfloat16\n" << std::endl;
+    std::cout << "Configuration: GEMM (" << M << ", " << N << ", " << K << "), dtype=bfloat16" << std::endl;
+    std::cout << "Implementation: " << implementation << "\n" << std::endl;
 
     size_t size_A = M * static_cast<size_t>(K) * sizeof(bf16);
     size_t size_B = N * static_cast<size_t>(K) * sizeof(bf16);
@@ -109,11 +127,11 @@ int main(int argc, char** argv) {
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
-    launch_gemm(d_A, d_B, d_C, M, N, K);
+    launch(d_A, d_B, d_C, M, N, K);
     cudaDeviceSynchronize();
 
     cudaEventRecord(start);
-    launch_gemm(d_A, d_B, d_C, M, N, K);
+    launch(d_A, d_B, d_C, M, N, K);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
 

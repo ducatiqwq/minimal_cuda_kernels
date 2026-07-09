@@ -1,6 +1,9 @@
 #include <assert.h>
+#include <cstdio>
+#include <cstdlib>
 #include <cuda_runtime.h>
 #include <cuda_bf16.h>
+#include <cublas_v2.h>
 #include <cute/tensor.hpp>
 
 using namespace cute;
@@ -128,7 +131,7 @@ __global__ static __launch_bounds__(decltype(size(TiledMma{}))::value) void gemm
     }
 }
 
-void launch_gemm_cutlass_tn(
+void launch_gemm_impl(
     int m, int n, int k,
     bf16 const* A, int ldA,
     bf16 const* B, int ldB,
@@ -196,9 +199,57 @@ void launch_gemm_cutlass_tn(
 }
 
 void launch_gemm(const __nv_bfloat16* d_A, const __nv_bfloat16* d_B, __nv_bfloat16* d_C, int M, int N, int K) {
-    launch_gemm_cutlass_tn(
+    launch_gemm_impl(
         M, N, K,
         reinterpret_cast<bf16 const*>(d_A), K,
         reinterpret_cast<bf16 const*>(d_B), K,
         reinterpret_cast<bf16*>(d_C), M);
+}
+
+static cublasHandle_t get_cublas_handle() {
+    static cublasHandle_t handle = nullptr;
+    static bool initialized = false;
+    if (!initialized) {
+        cublasStatus_t status = cublasCreate(&handle);
+        if (status != CUBLAS_STATUS_SUCCESS) {
+            std::fprintf(stderr, "cublasCreate failed with status %d\n", static_cast<int>(status));
+            std::exit(EXIT_FAILURE);
+        }
+        initialized = true;
+    }
+    return handle;
+}
+
+void launch_gemm_cublas_impl(
+    const __nv_bfloat16* d_A,
+    const __nv_bfloat16* d_B,
+    __nv_bfloat16* d_C,
+    int M, int N, int K,
+    cudaStream_t stream = 0)
+{
+    cublasHandle_t handle = get_cublas_handle();
+    cublasSetStream(handle, stream);
+
+    const float alpha = 1.0f;
+    const float beta = 0.0f;
+    cublasStatus_t status = cublasGemmEx(
+        handle,
+        CUBLAS_OP_T, CUBLAS_OP_N,
+        M, N, K,
+        &alpha,
+        d_A, CUDA_R_16BF, K,
+        d_B, CUDA_R_16BF, K,
+        &beta,
+        d_C, CUDA_R_16BF, M,
+        CUBLAS_COMPUTE_32F,
+        CUBLAS_GEMM_DEFAULT_TENSOR_OP);
+
+    if (status != CUBLAS_STATUS_SUCCESS) {
+        std::fprintf(stderr, "cublasGemmEx failed with status %d\n", static_cast<int>(status));
+        std::exit(EXIT_FAILURE);
+    }
+}
+
+void launch_gemm_cublas(const __nv_bfloat16* d_A, const __nv_bfloat16* d_B, __nv_bfloat16* d_C, int M, int N, int K) {
+    launch_gemm_cublas_impl(d_A, d_B, d_C, M, N, K);
 }
