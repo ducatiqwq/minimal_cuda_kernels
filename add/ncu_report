@@ -1,0 +1,171 @@
+==PROF== Connected to process 111520 (/root/ducati-backup/project/kernels/add/add)
+=== Device Metadata ===
+Device Name: NVIDIA GeForce RTX 4090 D
+Compute Capability: 8.9
+VRAM (Global Memory): 48538 MB
+Max Threads per Block: 1024
+=======================
+
+Configuration: Vector Length (N) = 33554432
+
+CPU Brute Force Time: 50.162 ms
+==PROF== Profiling "vector_add_kernel" - 0: 0%....50%....100% - 8 passes
+==PROF== Profiling "vector_add_kernel" - 1: 0%....50%....100% - 8 passes
+GPU Kernel Time: 439.837 ms
+
+Max absolute difference: 0
+Correctness Status: PASSED [OK]
+==PROF== Disconnected from process 111520
+[111520] add@127.0.0.1
+  vector_add_kernel(const float4 *, const float4 *, float4 *, int) (32768, 1, 1)x(256, 1, 1), Context 1, Stream 7, Device 0, CC 8.9
+    Section: GPU Speed Of Light Throughput
+    ----------------------- ----------- ------------
+    Metric Name             Metric Unit Metric Value
+    ----------------------- ----------- ------------
+    DRAM Frequency                  Ghz        10.49
+    SM Frequency                    Ghz         2.28
+    Elapsed Cycles                cycle       960720
+    Memory Throughput                 %        94.20
+    DRAM Throughput                   %        94.20
+    Duration                         us       421.47
+    L1/TEX Cache Throughput           %        10.40
+    L2 Cache Throughput               %        41.01
+    SM Active Cycles              cycle    950097.78
+    Compute (SM) Throughput           %         1.97
+    ----------------------- ----------- ------------
+
+    INF   The kernel is utilizing greater than 80.0% of the available compute or memory performance of the device. To   
+          further improve performance, work will likely need to be shifted from the most utilized to another unit.      
+          Start by analyzing DRAM in the Memory Workload Analysis section.                                              
+
+    Section: Launch Statistics
+    -------------------------------- --------------- ---------------
+    Metric Name                          Metric Unit    Metric Value
+    -------------------------------- --------------- ---------------
+    Block Size                                                   256
+    Function Cache Configuration                     CachePreferNone
+    Grid Size                                                  32768
+    Registers Per Thread             register/thread              18
+    Shared Memory Configuration Size           Kbyte           16.38
+    Driver Shared Memory Per Block       Kbyte/block            1.02
+    Dynamic Shared Memory Per Block       byte/block               0
+    Static Shared Memory Per Block        byte/block               0
+    # SMs                                         SM             114
+    Threads                                   thread         8388608
+    Uses Green Context                                             0
+    Waves Per SM                                               47.91
+    -------------------------------- --------------- ---------------
+
+    Section: Occupancy
+    ------------------------------- ----------- ------------
+    Metric Name                     Metric Unit Metric Value
+    ------------------------------- ----------- ------------
+    Block Limit SM                        block           24
+    Block Limit Registers                 block           10
+    Block Limit Shared Mem                block           16
+    Block Limit Warps                     block            6
+    Theoretical Active Warps per SM        warp           48
+    Theoretical Occupancy                     %          100
+    Achieved Occupancy                        %        82.60
+    Achieved Active Warps Per SM           warp        39.65
+    ------------------------------- ----------- ------------
+
+    OPT   Est. Local Speedup: 17.4%                                                                                     
+          The difference between calculated theoretical (100.0%) and measured achieved occupancy (82.6%) can be the     
+          result of warp scheduling overheads or workload imbalances during the kernel execution. Load imbalances can   
+          occur between warps within a block as well as across blocks of the same kernel. See the CUDA Best Practices   
+          Guide (https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#occupancy) for more details on     
+          optimizing occupancy.                                                                                         
+
+    Section: GPU and Memory Workload Distribution
+    -------------------------- ----------- ------------
+    Metric Name                Metric Unit Metric Value
+    -------------------------- ----------- ------------
+    Average DRAM Active Cycles       cycle   4164638.67
+    Total DRAM Elapsed Cycles        cycle     53055488
+    Average L1 Active Cycles         cycle    950097.78
+    Total L1 Elapsed Cycles          cycle    106331518
+    Average L2 Active Cycles         cycle    806893.92
+    Total L2 Elapsed Cycles          cycle     30037176
+    Average SM Active Cycles         cycle    950097.78
+    Total SM Elapsed Cycles          cycle    106331518
+    Average SMSP Active Cycles       cycle    921049.39
+    Total SMSP Elapsed Cycles        cycle    425326072
+    -------------------------- ----------- ------------
+
+  vector_add_kernel(const float4 *, const float4 *, float4 *, int) (32768, 1, 1)x(256, 1, 1), Context 1, Stream 7, Device 0, CC 8.9
+    Section: GPU Speed Of Light Throughput
+    ----------------------- ----------- ------------
+    Metric Name             Metric Unit Metric Value
+    ----------------------- ----------- ------------
+    DRAM Frequency                  Ghz        10.49
+    SM Frequency                    Ghz         2.27
+    Elapsed Cycles                cycle       880881
+    Memory Throughput                 %        95.12
+    DRAM Throughput                   %        95.12
+    Duration                         us       387.14
+    L1/TEX Cache Throughput           %        10.24
+    L2 Cache Throughput               %        33.80
+    SM Active Cycles              cycle    939092.79
+    Compute (SM) Throughput           %         1.94
+    ----------------------- ----------- ------------
+
+    INF   The kernel is utilizing greater than 80.0% of the available compute or memory performance of the device. To   
+          further improve performance, work will likely need to be shifted from the most utilized to another unit.      
+          Start by analyzing DRAM in the Memory Workload Analysis section.                                              
+
+    Section: Launch Statistics
+    -------------------------------- --------------- ---------------
+    Metric Name                          Metric Unit    Metric Value
+    -------------------------------- --------------- ---------------
+    Block Size                                                   256
+    Function Cache Configuration                     CachePreferNone
+    Grid Size                                                  32768
+    Registers Per Thread             register/thread              18
+    Shared Memory Configuration Size           Kbyte           16.38
+    Driver Shared Memory Per Block       Kbyte/block            1.02
+    Dynamic Shared Memory Per Block       byte/block               0
+    Static Shared Memory Per Block        byte/block               0
+    # SMs                                         SM             114
+    Threads                                   thread         8388608
+    Uses Green Context                                             0
+    Waves Per SM                                               47.91
+    -------------------------------- --------------- ---------------
+
+    Section: Occupancy
+    ------------------------------- ----------- ------------
+    Metric Name                     Metric Unit Metric Value
+    ------------------------------- ----------- ------------
+    Block Limit SM                        block           24
+    Block Limit Registers                 block           10
+    Block Limit Shared Mem                block           16
+    Block Limit Warps                     block            6
+    Theoretical Active Warps per SM        warp           48
+    Theoretical Occupancy                     %          100
+    Achieved Occupancy                        %        78.19
+    Achieved Active Warps Per SM           warp        37.53
+    ------------------------------- ----------- ------------
+
+    OPT   Est. Local Speedup: 21.81%                                                                                    
+          The difference between calculated theoretical (100.0%) and measured achieved occupancy (78.2%) can be the     
+          result of warp scheduling overheads or workload imbalances during the kernel execution. Load imbalances can   
+          occur between warps within a block as well as across blocks of the same kernel. See the CUDA Best Practices   
+          Guide (https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#occupancy) for more details on     
+          optimizing occupancy.                                                                                         
+
+    Section: GPU and Memory Workload Distribution
+    -------------------------- ----------- ------------
+    Metric Name                Metric Unit Metric Value
+    -------------------------- ----------- ------------
+    Average DRAM Active Cycles       cycle      3862736
+    Total DRAM Elapsed Cycles        cycle     48732160
+    Average L1 Active Cycles         cycle    939092.79
+    Total L1 Elapsed Cycles          cycle    108020240
+    Average L2 Active Cycles         cycle    821847.47
+    Total L2 Elapsed Cycles          cycle     27561132
+    Average SM Active Cycles         cycle    939092.79
+    Total SM Elapsed Cycles          cycle    108020240
+    Average SMSP Active Cycles       cycle    940210.28
+    Total SMSP Elapsed Cycles        cycle    432080960
+    -------------------------- ----------- ------------
+

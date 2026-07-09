@@ -1,0 +1,159 @@
+==PROF== Connected to process 1540235 (/root/ducati-backup/project/kernels/max/max)
+=== Device Metadata ===
+Device Name: NVIDIA GeForce RTX 4090 D
+Compute Capability: 8.9
+VRAM (Global Memory): 48538 MB
+Max Threads per Block: 1024
+=======================
+
+Configuration: Vector Length (N) = 33554432
+
+CPU Brute Force Time: 116.863 ms
+==PROF== Profiling "reduce_max_kernel" - 0: 0%....50%....100% - 8 passes
+==PROF== Profiling "reduce_max_kernel" - 1: 0%....50%....100% - 8 passes
+GPU Kernel Time: 233.603 ms
+
+CPU max: 10, GPU max: 10
+Partial outputs: 16384
+Absolute difference: 0
+Correctness Status: PASSED [OK]
+==PROF== Disconnected from process 1540235
+[1540235] max@127.0.0.1
+  void reduce_max_kernel<512, 1>(const float4 *, float *, int) (16384, 1, 1)x(512, 1, 1), Context 1, Stream 7, Device 0, CC 8.9
+    Section: GPU Speed Of Light Throughput
+    ----------------------- ----------- ------------
+    Metric Name             Metric Unit Metric Value
+    ----------------------- ----------- ------------
+    DRAM Frequency                  Ghz        10.49
+    SM Frequency                    Ghz         2.28
+    Elapsed Cycles                cycle       375463
+    Memory Throughput                 %        94.58
+    DRAM Throughput                   %        94.58
+    Duration                         us       164.74
+    L1/TEX Cache Throughput           %        12.39
+    L2 Cache Throughput               %        35.73
+    SM Active Cycles              cycle    310888.39
+    Compute (SM) Throughput           %        12.20
+    ----------------------- ----------- ------------
+
+    INF   The kernel is utilizing greater than 80.0% of the available compute or memory performance of the device. To   
+          further improve performance, work will likely need to be shifted from the most utilized to another unit.      
+          Start by analyzing DRAM in the Memory Workload Analysis section.                                              
+
+    Section: Launch Statistics
+    -------------------------------- --------------- ---------------
+    Metric Name                          Metric Unit    Metric Value
+    -------------------------------- --------------- ---------------
+    Block Size                                                   512
+    Function Cache Configuration                     CachePreferNone
+    Grid Size                                                  16384
+    Registers Per Thread             register/thread              16
+    Shared Memory Configuration Size           Kbyte            8.19
+    Driver Shared Memory Per Block       Kbyte/block            1.02
+    Dynamic Shared Memory Per Block       byte/block               0
+    Static Shared Memory Per Block        byte/block              64
+    # SMs                                         SM             114
+    Threads                                   thread         8388608
+    Uses Green Context                                             0
+    Waves Per SM                                               47.91
+    -------------------------------- --------------- ---------------
+
+    Section: Occupancy
+    ------------------------------- ----------- ------------
+    Metric Name                     Metric Unit Metric Value
+    ------------------------------- ----------- ------------
+    Block Limit SM                        block           24
+    Block Limit Registers                 block            8
+    Block Limit Shared Mem                block            7
+    Block Limit Warps                     block            3
+    Theoretical Active Warps per SM        warp           48
+    Theoretical Occupancy                     %          100
+    Achieved Occupancy                        %       111.91
+    Achieved Active Warps Per SM           warp        53.72
+    ------------------------------- ----------- ------------
+
+    Section: GPU and Memory Workload Distribution
+    -------------------------- ----------- ------------
+    Metric Name                Metric Unit Metric Value
+    -------------------------- ----------- ------------
+    Average DRAM Active Cycles       cycle   1634070.67
+    Total DRAM Elapsed Cycles        cycle     20731904
+    Average L1 Active Cycles         cycle    310888.39
+    Total L1 Elapsed Cycles          cycle     35986050
+    Average L2 Active Cycles         cycle    320768.14
+    Total L2 Elapsed Cycles          cycle     11738484
+    Average SM Active Cycles         cycle    310888.39
+    Total SM Elapsed Cycles          cycle     35986050
+    Average SMSP Active Cycles       cycle    369103.24
+    Total SMSP Elapsed Cycles        cycle    143944200
+    -------------------------- ----------- ------------
+
+  void reduce_max_kernel<512, 1>(const float4 *, float *, int) (16384, 1, 1)x(512, 1, 1), Context 1, Stream 7, Device 0, CC 8.9
+    Section: GPU Speed Of Light Throughput
+    ----------------------- ----------- ------------
+    Metric Name             Metric Unit Metric Value
+    ----------------------- ----------- ------------
+    DRAM Frequency                  Ghz        10.49
+    SM Frequency                    Ghz         2.25
+    Elapsed Cycles                cycle       321795
+    Memory Throughput                 %        95.54
+    DRAM Throughput                   %        95.54
+    Duration                         us       142.43
+    L1/TEX Cache Throughput           %        12.47
+    L2 Cache Throughput               %        41.55
+    SM Active Cycles              cycle    308952.54
+    Compute (SM) Throughput           %        12.22
+    ----------------------- ----------- ------------
+
+    INF   The kernel is utilizing greater than 80.0% of the available compute or memory performance of the device. To   
+          further improve performance, work will likely need to be shifted from the most utilized to another unit.      
+          Start by analyzing DRAM in the Memory Workload Analysis section.                                              
+
+    Section: Launch Statistics
+    -------------------------------- --------------- ---------------
+    Metric Name                          Metric Unit    Metric Value
+    -------------------------------- --------------- ---------------
+    Block Size                                                   512
+    Function Cache Configuration                     CachePreferNone
+    Grid Size                                                  16384
+    Registers Per Thread             register/thread              16
+    Shared Memory Configuration Size           Kbyte            8.19
+    Driver Shared Memory Per Block       Kbyte/block            1.02
+    Dynamic Shared Memory Per Block       byte/block               0
+    Static Shared Memory Per Block        byte/block              64
+    # SMs                                         SM             114
+    Threads                                   thread         8388608
+    Uses Green Context                                             0
+    Waves Per SM                                               47.91
+    -------------------------------- --------------- ---------------
+
+    Section: Occupancy
+    ------------------------------- ----------- ------------
+    Metric Name                     Metric Unit Metric Value
+    ------------------------------- ----------- ------------
+    Block Limit SM                        block           24
+    Block Limit Registers                 block            8
+    Block Limit Shared Mem                block            7
+    Block Limit Warps                     block            3
+    Theoretical Active Warps per SM        warp           48
+    Theoretical Occupancy                     %          100
+    Achieved Occupancy                        %        95.06
+    Achieved Active Warps Per SM           warp        45.63
+    ------------------------------- ----------- ------------
+
+    Section: GPU and Memory Workload Distribution
+    -------------------------- ----------- ------------
+    Metric Name                Metric Unit Metric Value
+    -------------------------- ----------- ------------
+    Average DRAM Active Cycles       cycle   1427185.33
+    Total DRAM Elapsed Cycles        cycle     17925120
+    Average L1 Active Cycles         cycle    308952.54
+    Total L1 Elapsed Cycles          cycle     35931264
+    Average L2 Active Cycles         cycle    269639.92
+    Total L2 Elapsed Cycles          cycle     10097460
+    Average SM Active Cycles         cycle    308952.54
+    Total SM Elapsed Cycles          cycle     35931264
+    Average SMSP Active Cycles       cycle    308724.21
+    Total SMSP Elapsed Cycles        cycle    143725056
+    -------------------------- ----------- ------------
+
