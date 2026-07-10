@@ -9,15 +9,15 @@
 using namespace cute;
 using bf16 = cutlass::bfloat16_t;
 
-constexpr int BLOCK_M   = 256;
-constexpr int BLOCK_N   = 128;
-constexpr int SMEM_K    = 64;
-constexpr int WARP_M    = 2;
-constexpr int WARP_N    = 4;
-constexpr int STAGES_K  = 2;
+constexpr int BLOCK_M   = 256;  // {64, 128, 256}
+constexpr int BLOCK_N   = 128;  // {64, 128, 256}
+constexpr int SMEM_K    = 64;   // {32, 64, 128}
+constexpr int WARP_M    = 2;    // {1, 2, 4}
+constexpr int WARP_N    = 4;    // {1, 2, 4}
+constexpr int STAGES_K  = 2;    // {1, 2, 3}
 
 constexpr int G2S_COPY_K = SMEM_K / 8;
-constexpr int SWIZZLE_K = (SMEM_K < 64) ? (log_2(static_cast<uint32_t>(SMEM_K)) - 3) : 3;
+constexpr int SWIZZLE_K = log_2(static_cast<uint32_t>(SMEM_K)) - 3;
 constexpr int NUM_THREADS = WARP_M * WARP_N * 32;
 
 inline int ceil_div(int a, int b) { return (a + b - 1) / b; }
@@ -159,7 +159,7 @@ void launch_gemm_impl(
     auto bP = Int<STAGES_K>{};
 
     auto swizzle_atom = composition(
-        Swizzle<SWIZZLE_K, 3, 3>{},
+        Swizzle<3, 3, SWIZZLE_K>{},  // https://forums.developer.nvidia.com/t/how-to-understand-the-bank-conflict-of-shared-mem/260900
         Layout<Shape<_8, Int<SMEM_K>>, Stride<Int<SMEM_K>, _1>>{});
 
     auto sA = tile_to_shape(swizzle_atom, make_shape(bM, bK, bP));
