@@ -94,7 +94,7 @@ __global__ static __launch_bounds__(decltype(size(TiledMma{}))::value) void gemm
         }
     }
 
-    CUTE_NO_UNROLL
+    CUTE_UNROLL
     for (int k_tile = 0; k_tile < k_tile_count; ++k_tile) {
         int read_stage = k_tile % STAGES_K;
         int wait_n = min(k_tile_next - k_tile - 1, STAGES_K - 1);
@@ -155,8 +155,8 @@ void launch_gemm_impl(
     auto bP = Int<STAGES_K>{};
 
     auto swizzle_atom = composition(
-        Swizzle<3, 3, 3>{},
-        Layout<Shape<_8, Shape<_8, _8>>, Stride<_8, Stride<_1, _64>>>{});
+        Swizzle<log_2(static_cast<uint32_t>(SMEM_K)) - 3, 3, 3>{},
+        Layout<Shape<_8, Int<SMEM_K>>, Stride<Int<SMEM_K>, _1>>{});
 
     auto sA = tile_to_shape(swizzle_atom, make_shape(bM, bK, bP));
     auto sB = tile_to_shape(swizzle_atom, make_shape(bN, bK, bP));
@@ -164,11 +164,11 @@ void launch_gemm_impl(
 
     TiledCopy copyA = make_tiled_copy(
         Copy_Atom<SM80_CP_ASYNC_CACHEALWAYS<uint128_t>, bf16>{},
-        Layout<Shape<Int<WARP_M * WARP_N * 4>, _8>, Stride<_8, _1>>{},
+        Layout<Shape<Int<WARP_M * WARP_N * (256 / SMEM_K)>, Int<SMEM_K / 8>>, Stride<Int<SMEM_K / 8>, _1>>{},
         Layout<Shape<_1, _8>>{});
     TiledCopy copyB = make_tiled_copy(
         Copy_Atom<SM80_CP_ASYNC_CACHEALWAYS<uint128_t>, bf16>{},
-        Layout<Shape<Int<WARP_M * WARP_N * 4>, _8>, Stride<_8, _1>>{},
+        Layout<Shape<Int<WARP_M * WARP_N * (256 / SMEM_K)>, Int<SMEM_K / 8>>, Stride<Int<SMEM_K / 8>, _1>>{},
         Layout<Shape<_1, _8>>{});
 
     TiledMMA mmaC = make_tiled_mma(
