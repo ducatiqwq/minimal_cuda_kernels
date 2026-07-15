@@ -1,6 +1,6 @@
 """Torch baseline for the CUDA GEMM in kernel.cu / main.cu.
 
-Performs C = A @ B.T with bfloat16 matrices A (M, K) and B (N, K),
+Performs C = A @ B.T with float16 matrices A (M, K) and B (N, K),
 and reports the time taken by torch's CUDA matmul (measured with CUDA
 events after a warmup, matching main.cu).
 """
@@ -26,11 +26,11 @@ def main():
     print(f"Multiprocessors: {props.multi_processor_count}")
     print("=======================\n")
 
-    print(f"Configuration: GEMM ({M}, {N}, {K}), dtype=bfloat16\n")
+    print(f"Configuration: GEMM ({M}, {N}, {K}), dtype=float16\n")
 
     gen = torch.Generator(device=device).manual_seed(42)
-    A = torch.rand(M, K, device=device, dtype=torch.bfloat16, generator=gen) * 2.0 - 1.0
-    B = torch.rand(N, K, device=device, dtype=torch.bfloat16, generator=gen) * 2.0 - 1.0
+    A = torch.rand(M, K, device=device, dtype=torch.float16, generator=gen) * 2.0 - 1.0
+    B = torch.rand(N, K, device=device, dtype=torch.float16, generator=gen) * 2.0 - 1.0
 
     _ = torch.matmul(A, B.T)
     torch.cuda.synchronize()

@@ -221,6 +221,23 @@ copy(Copy_Atom<CopyArgs...>       const& copy_atom,
       CUTE_STATIC_ASSERT_V(shape<0>(dst_c) == shape<0>(dst));
       CUTE_STATIC_ASSERT_V(shape<0>(src_c) == shape<0>(src));
 
+      // if (!blockIdx.x && !blockIdx.y && !blockIdx.z) {
+      //     int warp_idx = threadIdx.x / 32;
+      //     int lane_idx = threadIdx.x % 32;
+      //     if (warp_idx == 0) {
+      //         for (int i = 0; i < 32; i++) {
+      //             if (i == lane_idx) {
+      //                 print(dst_c), print("\n");
+      //             }
+      //         }
+      //     }
+      // }
+      // CUTE_UNROLL
+      // for (int i = 0; i <= 0; ++i) {
+      //   copy_atom.call(src_c(_,i), dst_c(_,i));
+      // }
+      // return;
+
       CUTE_UNROLL
       for (int i = 0; i < size<1>(dst_c); ++i) {
         copy_atom.call(src_c(_,i), dst_c(_,i));

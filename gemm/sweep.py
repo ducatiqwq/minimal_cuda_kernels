@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Grid-search hyperparameters for the CUTLASS GEMM kernel in kernel.cu.
 
-For each valid combination of BLOCK_M, BLOCK_N, SMEM_K, WARP_M, WARP_N, and
-STAGES_K, patches kernel.cu, runs `make`, parses throughput/latency from the
-build output, and records success or failure.  Dumps all results and reports
-the best configuration.
+For each valid combination of BLOCK_M, BLOCK_N, SMEM_K, WARP_M, WARP_N,
+STAGES_K, and MMA_ATOM_TYPE, patches kernel.cu, runs `make`, parses
+throughput/latency from the build output, and records success or failure.
+Dumps all results and reports the best configuration.
 """
 
 from __future__ import annotations
@@ -28,15 +28,27 @@ M = 8192
 N = 8192
 K = 8192
 
-# Search space (SMEM_K is fixed).
-BLOCK_M_VALUES = [32, 64, 128, 256, 512]
-BLOCK_N_VALUES = [32, 64, 128, 256, 512]
-SMEM_K_VALUE = 64
-WARP_M_VALUES = [1, 2, 4, 8, 16, 32]
-WARP_N_VALUES = [1, 2, 4, 8, 16, 32]
-STAGES_K_VALUES = [1, 2, 3]
+# Search space.
+BLOCK_M_VALUES = [128, 256]
+BLOCK_N_VALUES = [64, 128, 256]
+SMEM_K_VALUES = [32, 64, 128]
+WARP_M_VALUES = [1, 2, 4]
+WARP_N_VALUES = [1, 2, 4]
+STAGES_K_VALUES = [1, 2]
+MMA_ATOM_TYPE_VALUES = [16816, 1688]
 
-PARAM_NAMES = ("BLOCK_M", "BLOCK_N", "SMEM_K", "WARP_M", "WARP_N", "STAGES_K")
+# MMA atom K dimension: 16816 -> 16, 1688 -> 8.
+MMA_ATOM_K = {16816: 16, 1688: 8}
+
+PARAM_NAMES = (
+    "BLOCK_M",
+    "BLOCK_N",
+    "SMEM_K",
+    "WARP_M",
+    "WARP_N",
+    "STAGES_K",
+    "MMA_ATOM_TYPE",
+)
 
 THROUGHPUT_RE = re.compile(r"GPU Throughput:\s*([\d.]+)\s*TFLOPS")
 LATENCY_RE = re.compile(r"GPU Kernel Time:\s*([\d.]+)\s*ms")
@@ -56,6 +68,7 @@ class Config:
     WARP_M: int
     WARP_N: int
     STAGES_K: int
+    MMA_ATOM_TYPE: int
 
 
 @dataclass
@@ -81,6 +94,8 @@ class SweepState:
 
 def is_valid_config(cfg: Config) -> str | None:
     """Return a reason string if cfg should be skipped, else None."""
+    if cfg.MMA_ATOM_TYPE not in MMA_ATOM_K:
+        return f"unsupported MMA_ATOM_TYPE={cfg.MMA_ATOM_TYPE}"
     if cfg.WARP_M * cfg.WARP_N > 32:
         return "WARP_M * WARP_N > 32"
     if M % cfg.BLOCK_M != 0 or N % cfg.BLOCK_N != 0 or K % cfg.SMEM_K != 0:
@@ -89,6 +104,9 @@ def is_valid_config(cfg: Config) -> str | None:
         return f"BLOCK_M % (WARP_M * 16) != 0"
     if cfg.BLOCK_N % (cfg.WARP_N * 8) != 0:
         return f"BLOCK_N % (WARP_N * 8) != 0"
+    atom_k = MMA_ATOM_K[cfg.MMA_ATOM_TYPE]
+    if cfg.SMEM_K % atom_k != 0:
+        return f"SMEM_K % MMA_ATOM_K({atom_k}) != 0"
     threads = cfg.WARP_M * cfg.WARP_N * 32
     if threads > 1024:
         return f"threads per block ({threads}) > 1024"
@@ -97,20 +115,23 @@ def is_valid_config(cfg: Config) -> str | None:
 
 def iter_configs() -> list[tuple[Config, str | None]]:
     configs: list[tuple[Config, str | None]] = []
-    for block_m, block_n, warp_m, warp_n, stages_k in product(
+    for block_m, block_n, smem_k, warp_m, warp_n, stages_k, mma_atom_type in product(
         BLOCK_M_VALUES,
         BLOCK_N_VALUES,
+        SMEM_K_VALUES,
         WARP_M_VALUES,
         WARP_N_VALUES,
         STAGES_K_VALUES,
+        MMA_ATOM_TYPE_VALUES,
     ):
         cfg = Config(
             BLOCK_M=block_m,
             BLOCK_N=block_n,
-            SMEM_K=SMEM_K_VALUE,
+            SMEM_K=smem_k,
             WARP_M=warp_m,
             WARP_N=warp_n,
             STAGES_K=stages_k,
+            MMA_ATOM_TYPE=mma_atom_type,
         )
         configs.append((cfg, is_valid_config(cfg)))
     return configs
@@ -125,6 +146,7 @@ def patch_kernel_cu(path: Path, cfg: Config) -> None:
         "WARP_M": cfg.WARP_M,
         "WARP_N": cfg.WARP_N,
         "STAGES_K": cfg.STAGES_K,
+        "MMA_ATOM_TYPE": cfg.MMA_ATOM_TYPE,
     }
     for name, value in values.items():
         pattern = PARAM_LINE_RES[name]
@@ -269,6 +291,7 @@ def save_results(
         "WARP_M",
         "WARP_N",
         "STAGES_K",
+        "MMA_ATOM_TYPE",
         "status",
         "throughput_tflops",
         "latency_ms",
@@ -309,7 +332,8 @@ def print_summary(results: list[SweepResult], best: SweepResult | None) -> None:
     print("\n=== Best Configuration ===")
     print(
         f"BLOCK_M={c.BLOCK_M}, BLOCK_N={c.BLOCK_N}, SMEM_K={c.SMEM_K}, "
-        f"WARP_M={c.WARP_M}, WARP_N={c.WARP_N}, STAGES_K={c.STAGES_K}"
+        f"WARP_M={c.WARP_M}, WARP_N={c.WARP_N}, STAGES_K={c.STAGES_K}, "
+        f"MMA_ATOM_TYPE={c.MMA_ATOM_TYPE}"
     )
     print(f"Throughput: {best.throughput_tflops:.4f} TFLOPS")
     print(f"Latency:    {best.latency_ms:.6f} ms")
@@ -382,7 +406,8 @@ def main() -> int:
         for i, (cfg, _) in enumerate(runnable[:20], 1):
             print(
                 f"{i:4d}. BLOCK_M={cfg.BLOCK_M}, BLOCK_N={cfg.BLOCK_N}, "
-                f"WARP_M={cfg.WARP_M}, WARP_N={cfg.WARP_N}, STAGES_K={cfg.STAGES_K}"
+                f"SMEM_K={cfg.SMEM_K}, WARP_M={cfg.WARP_M}, WARP_N={cfg.WARP_N}, "
+                f"STAGES_K={cfg.STAGES_K}, MMA_ATOM_TYPE={cfg.MMA_ATOM_TYPE}"
             )
         if len(runnable) > 20:
             print(f"... and {len(runnable) - 20} more")
@@ -401,6 +426,7 @@ def main() -> int:
                 WARP_M=row["WARP_M"],
                 WARP_N=row["WARP_N"],
                 STAGES_K=row["STAGES_K"],
+                MMA_ATOM_TYPE=row["MMA_ATOM_TYPE"],
             )
             results.append(
                 SweepResult(
@@ -423,6 +449,7 @@ def main() -> int:
                         cfg.WARP_M,
                         cfg.WARP_N,
                         cfg.STAGES_K,
+                        cfg.MMA_ATOM_TYPE,
                     )
                 )
     else:
@@ -446,6 +473,7 @@ def main() -> int:
                 cfg.WARP_M,
                 cfg.WARP_N,
                 cfg.STAGES_K,
+                cfg.MMA_ATOM_TYPE,
             )
             if key in done_keys:
                 continue
@@ -454,8 +482,9 @@ def main() -> int:
 
             print(
                 f"[{idx}/{len(runnable)}] "
-                f"BLOCK_M={cfg.BLOCK_M}, BLOCK_N={cfg.BLOCK_N}, "
-                f"WARP_M={cfg.WARP_M}, WARP_N={cfg.WARP_N}, STAGES_K={cfg.STAGES_K} ... ",
+                f"BLOCK_M={cfg.BLOCK_M}, BLOCK_N={cfg.BLOCK_N}, SMEM_K={cfg.SMEM_K}, "
+                f"WARP_M={cfg.WARP_M}, WARP_N={cfg.WARP_N}, STAGES_K={cfg.STAGES_K}, "
+                f"MMA_ATOM_TYPE={cfg.MMA_ATOM_TYPE} ... ",
                 end="",
                 flush=True,
             )

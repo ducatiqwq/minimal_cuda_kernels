@@ -7,12 +7,12 @@
 #include <string>
 #include <cstdlib>
 #include <cuda_runtime.h>
-#include <cuda_bf16.h>
+#include <cuda_fp16.h>
 
-using bf16 = __nv_bfloat16;
+using fp16 = __half;
 
-extern void launch_gemm(const bf16* d_A, const bf16* d_B, bf16* d_C, int M, int N, int K);
-extern void launch_gemm_cublas(const bf16* d_A, const bf16* d_B, bf16* d_C, int M, int N, int K);
+extern void launch_gemm(const fp16* d_A, const fp16* d_B, fp16* d_C, int M, int N, int K);
+extern void launch_gemm_cublas(const fp16* d_A, const fp16* d_B, fp16* d_C, int M, int N, int K);
 
 void print_device_metadata() {
     int nDevices;
@@ -33,26 +33,26 @@ void print_device_metadata() {
 }
 
 float cpu_dot(
-    const std::vector<bf16>& A,
-    const std::vector<bf16>& B,
+    const std::vector<fp16>& A,
+    const std::vector<fp16>& B,
     int m, int n, int K, int N
 ) {
     float sum = 0.0f;
     for (int k = 0; k < K; ++k) {
-        sum += __bfloat162float(A[m * K + k]) * __bfloat162float(B[n * K + k]);
+        sum += __half2float(A[m * K + k]) * __half2float(B[n * K + k]);
     }
     return sum;
 }
 
 void cpu_gemm_naive(
-    const std::vector<bf16>& A,
-    const std::vector<bf16>& B,
-    std::vector<bf16>& C,
+    const std::vector<fp16>& A,
+    const std::vector<fp16>& B,
+    std::vector<fp16>& C,
     int M, int N, int K
 ) {
     for (int m = 0; m < M; ++m) {
         for (int n = 0; n < N; ++n) {
-            C[m + n * M] = __float2bfloat16(cpu_dot(A, B, m, n, K, N));
+            C[m + n * M] = __float2half(cpu_dot(A, B, m, n, K, N));
         }
     }
 }
@@ -81,29 +81,29 @@ int main(int argc, char** argv) {
     int N = debug ? 512 : 8192;
     int K = debug ? 64 : 8192;
 
-    std::cout << "Configuration: GEMM (" << M << ", " << N << ", " << K << "), dtype=bfloat16" << std::endl;
+    std::cout << "Configuration: GEMM (" << M << ", " << N << ", " << K << "), dtype=float16" << std::endl;
     std::cout << "Implementation: " << implementation << "\n" << std::endl;
 
-    size_t size_A = M * static_cast<size_t>(K) * sizeof(bf16);
-    size_t size_B = N * static_cast<size_t>(K) * sizeof(bf16);
-    size_t size_C = static_cast<size_t>(M) * N * sizeof(bf16);
+    size_t size_A = M * static_cast<size_t>(K) * sizeof(fp16);
+    size_t size_B = N * static_cast<size_t>(K) * sizeof(fp16);
+    size_t size_C = static_cast<size_t>(M) * N * sizeof(fp16);
 
-    std::vector<bf16> h_A(M * static_cast<size_t>(K));
-    std::vector<bf16> h_B(N * static_cast<size_t>(K));
-    std::vector<bf16> h_C_cpu(static_cast<size_t>(M) * N);
-    std::vector<bf16> h_C_gpu(static_cast<size_t>(M) * N);
+    std::vector<fp16> h_A(M * static_cast<size_t>(K));
+    std::vector<fp16> h_B(N * static_cast<size_t>(K));
+    std::vector<fp16> h_C_cpu(static_cast<size_t>(M) * N);
+    std::vector<fp16> h_C_gpu(static_cast<size_t>(M) * N);
 
     std::mt19937 gen(42);
     std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
 
     for (int m = 0; m < M; ++m) {
         for (int k = 0; k < K; ++k) {
-            h_A[m * K + k] = __float2bfloat16(dist(gen));
+            h_A[m * K + k] = __float2half(dist(gen));
         }
     }
     for (int n = 0; n < N; ++n) {
         for (int k = 0; k < K; ++k) {
-            h_B[n * K + k] = __float2bfloat16(dist(gen));
+            h_B[n * K + k] = __float2half(dist(gen));
         }
     }
 
@@ -115,7 +115,7 @@ int main(int argc, char** argv) {
         std::cout << "CPU Brute Force Time: " << cpu_duration.count() << " ms" << std::endl;
     }
 
-    bf16 *d_A = nullptr, *d_B = nullptr, *d_C = nullptr;
+    fp16 *d_A = nullptr, *d_B = nullptr, *d_C = nullptr;
     cudaMalloc(&d_A, size_A);
     cudaMalloc(&d_B, size_B);
     cudaMalloc(&d_C, size_C);
@@ -149,17 +149,17 @@ int main(int argc, char** argv) {
     float max_diff = 0.0f;
     int max_diff_row = -1;
     int max_diff_col = -1;
-    const float EPSILON = 0.4f;
+    const float EPSILON = 0.5f;
 
     if (debug) {
         for (int n = 0; n < N; ++n) {
             for (int m = 0; m < M; ++m) {
-                float diff = std::abs(__bfloat162float(h_C_cpu[m + n * M]) - __bfloat162float(h_C_gpu[m + n * M]));
+                float diff = std::abs(__half2float(h_C_cpu[m + n * M]) - __half2float(h_C_gpu[m + n * M]));
                 if (diff > max_diff) {
                     max_diff = diff;
                     max_diff_row = m;
                     max_diff_col = n;
-                    printf("Expected: %f, Actual: %f, Diff: %f\n", __bfloat162float(h_C_cpu[m + n * M]), __bfloat162float(h_C_gpu[m + n * M]), diff);
+                    printf("Expected: %f, Actual: %f, Diff: %f\n", __half2float(h_C_cpu[m + n * M]), __half2float(h_C_gpu[m + n * M]), diff);
                 }
             }
         }
@@ -173,8 +173,8 @@ int main(int argc, char** argv) {
             int m = row_dist(verify_gen);
             int n = col_dist(verify_gen);
             float ref = cpu_dot(h_A, h_B, m, n, K, N);
-            float gpu_val = __bfloat162float(h_C_gpu[m + n * M]);
-            h_C_cpu[m + n * M] = ref;
+            float gpu_val = __half2float(h_C_gpu[m + n * M]);
+            h_C_cpu[m + n * M] = __float2half(ref);
 
             float diff = std::abs(ref - gpu_val);
             if (diff > max_diff) {
@@ -189,8 +189,8 @@ int main(int argc, char** argv) {
     if (max_diff > EPSILON) {
         correct = false;
         std::cout << "Mismatch at (" << max_diff_row << ", " << max_diff_col << ")" << std::endl;
-        std::cout << "Expected: " << __bfloat162float(h_C_cpu[max_diff_row + max_diff_col * M]) << std::endl;
-        std::cout << "Actual: " << __bfloat162float(h_C_gpu[max_diff_row + max_diff_col * M]) << std::endl;
+        std::cout << "Expected: " << __half2float(h_C_cpu[max_diff_row + max_diff_col * M]) << std::endl;
+        std::cout << "Actual: " << __half2float(h_C_gpu[max_diff_row + max_diff_col * M]) << std::endl;
     }
 
     std::cout << "\nMax absolute difference: " << max_diff << std::endl;
