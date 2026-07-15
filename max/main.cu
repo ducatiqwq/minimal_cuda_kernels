@@ -89,18 +89,24 @@ int main(int argc, char** argv) {
     launch_reduce_max(d_A, d_partial, N);
     cudaDeviceSynchronize();
 
+    auto wall_start = std::chrono::high_resolution_clock::now();
+
     cudaEventRecord(start);
     launch_reduce_max(d_A, d_partial, N);
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
-    
+
     std::vector<float> h_partial(partial_size);
     cudaMemcpy(h_partial.data(), d_partial, partial_size * sizeof(float), cudaMemcpyDeviceToHost);
     float gpu_max = host_reduce_max(h_partial);
 
-    float total_ms = 0;
-    cudaEventElapsedTime(&total_ms, start, stop);
-    std::cout << "Total Execution Time: " << total_ms << " ms" << std::endl;
+    auto wall_end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> wall_duration = wall_end - wall_start;
+
+    float gpu_ms = 0;
+    cudaEventElapsedTime(&gpu_ms, start, stop);
+    std::cout << "GPU Elapsed Time: " << gpu_ms << " ms" << std::endl;
+    std::cout << "CPU Elapsed Time: " << wall_duration.count() << " ms" << std::endl;
 
     float diff = std::abs(cpu_max - gpu_max);
     const float EPSILON = 1e-5f;
