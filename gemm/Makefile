@@ -1,6 +1,6 @@
 NVCC = nvcc
 CUTLASS_DIR = cutlass
-NVCCFLAGS = -O3 -arch=sm_89 -std=c++17 -lineinfo -Xptxas -dlcm=cg --expt-relaxed-constexpr -I$(CUTLASS_DIR)/include
+NVCCFLAGS = -O3 -arch=sm_80 -std=c++17 -lineinfo -Xptxas -dlcm=cg --expt-relaxed-constexpr -I$(CUTLASS_DIR)/include
 LDFLAGS = -lcublas
 
 BUILD_DIR = build
